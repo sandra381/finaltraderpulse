@@ -5,46 +5,41 @@ import Sidebar from '@/components/Sidebar'
 import SearchBar from '@/components/SearchBar'
 import ResultCard from '@/components/ResultCard'
 import { Toaster } from 'sonner'
-import { getGamificationStats } from '@/lib/api'
-
-interface GamificationStats {
-  xp: number
-  level: number
-  badges: string[]
-  nextLevelXP: number
-  analysis_count: number
-}
+import { GamificationProvider } from '@/contexts/GamificationContext'
 
 export default function DashboardPage() {
   const [currentSymbol, setCurrentSymbol] = useState<string>('')
-  const [stats, setStats] = useState<GamificationStats | null>(null)
 
-  const handleAnalyze = async (symbol: string) => {
+  const handleAnalyze = (symbol: string) => {
     setCurrentSymbol(symbol)
-    // Reload stats after analysis
-    try {
-      const newStats = await getGamificationStats()
-      setStats(newStats)
-    } catch (error) {
-      console.error('Error updating stats:', error)
-    }
-  }
-
-  const handleStatsUpdate = (newStats: GamificationStats) => {
-    setStats(newStats)
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar onStatsUpdate={handleStatsUpdate} />
-      <main className="flex-1 p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">TraderPulse Dashboard</h1>
-          <SearchBar onAnalyze={handleAnalyze} />
-          <ResultCard symbol={currentSymbol} />
-        </div>
-      </main>
-      <Toaster />
-    </div>
+    <GamificationProvider>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <Sidebar />
+
+        <main className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Header */}
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground mt-1">
+                Search for any stock symbol and get AI-powered sentiment analysis.
+              </p>
+            </div>
+
+            {/* Search */}
+            <SearchBar onAnalyze={handleAnalyze} />
+
+            {/* Results */}
+            <ResultCard symbol={currentSymbol} />
+          </div>
+        </main>
+
+        {/* Sonner toast notifications */}
+        <Toaster richColors position="top-right" />
+      </div>
+    </GamificationProvider>
   )
 }

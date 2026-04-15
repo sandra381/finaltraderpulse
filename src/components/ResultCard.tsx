@@ -1,35 +1,58 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getQuote, getSentiment } from '@/lib/api'
-
-interface QuoteData {
-  symbol: string
-  current_price: number
-  percent_change: number
-  volume: number
-}
-
-interface SentimentData {
-  symbol: string
-  sentiment: string
-  justification: string
-  timestamp: string
-}
+import { getQuote, getSentiment, QuoteResponse, SentimentResponse } from '@/lib/api'
+import { TrendingUp, TrendingDown, Minus, Activity, BarChart2, Clock } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface ResultCardProps {
   symbol?: string
 }
 
+function SentimentIcon({ sentiment }: { sentiment: string }) {
+  switch (sentiment.toLowerCase()) {
+    case 'bullish':
+      return <TrendingUp size={20} className="text-emerald-400" />
+    case 'bearish':
+      return <TrendingDown size={20} className="text-red-400" />
+    default:
+      return <Minus size={20} className="text-yellow-400" />
+  }
+}
+
+function sentimentColor(sentiment: string) {
+  switch (sentiment.toLowerCase()) {
+    case 'bullish':
+      return 'text-emerald-400'
+    case 'bearish':
+      return 'text-red-400'
+    default:
+      return 'text-yellow-400'
+  }
+}
+
+function sentimentBg(sentiment: string) {
+  switch (sentiment.toLowerCase()) {
+    case 'bullish':
+      return 'bg-emerald-500/10 border-emerald-500/20'
+    case 'bearish':
+      return 'bg-red-500/10 border-red-500/20'
+    default:
+      return 'bg-yellow-500/10 border-yellow-500/20'
+  }
+}
+
 export default function ResultCard({ symbol }: ResultCardProps) {
-  const [quote, setQuote] = useState<QuoteData | null>(null)
-  const [sentiment, setSentiment] = useState<SentimentData | null>(null)
+  const [quote, setQuote] = useState<QuoteResponse | null>(null)
+  const [sentiment, setSentiment] = useState<SentimentResponse | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (symbol) {
       loadData(symbol)
+    } else {
+      setQuote(null)
+      setSentiment(null)
     }
   }, [symbol])
 
@@ -38,101 +61,100 @@ export default function ResultCard({ symbol }: ResultCardProps) {
     try {
       const [quoteData, sentimentData] = await Promise.all([
         getQuote(sym),
-        getSentiment(sym)
+        getSentiment(sym),
       ])
       setQuote(quoteData)
       setSentiment(sentimentData)
     } catch (error) {
+      toast.error(`Failed to load data for ${sym}`)
       console.error('Error loading data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const getSentimentColor = (sentiment: string) => {
-    switch (sentiment.toLowerCase()) {
-      case 'bullish':
-        return 'text-green-600'
-      case 'bearish':
-        return 'text-red-600'
-      default:
-        return 'text-yellow-600'
-    }
-  }
-
   if (!symbol) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-gray-500 text-center">Enter a symbol and click Analyze to see results</p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 py-20 text-center gap-3">
+        <BarChart2 size={40} className="text-muted-foreground/40" />
+        <p className="text-muted-foreground text-sm">
+          Enter a stock symbol and click <strong>Analyze</strong> to see results.
+        </p>
+      </div>
     )
   }
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-gray-500 text-center">Loading...</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4 animate-pulse">
+        <div className="h-40 rounded-2xl bg-muted/40" />
+        <div className="h-40 rounded-2xl bg-muted/40" />
+      </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Quote Card */}
       {quote && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{quote.symbol} Quote</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Current Price</p>
-                <p className="text-2xl font-bold">${quote.current_price.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Change</p>
-                <p className={`text-2xl font-bold ${quote.percent_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {quote.percent_change >= 0 ? '+' : ''}{quote.percent_change.toFixed(2)}%
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Volume</p>
-                <p className="text-2xl font-bold">{quote.volume.toLocaleString()}</p>
-              </div>
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Activity size={18} className="text-primary" />
+            <h2 className="text-base font-semibold">{quote.symbol} · Live Quote</h2>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-xl bg-muted/40 p-4 space-y-1">
+              <p className="text-xs text-muted-foreground">Price</p>
+              <p className="text-2xl font-bold">${quote.current_price.toFixed(2)}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="rounded-xl bg-muted/40 p-4 space-y-1">
+              <p className="text-xs text-muted-foreground">Change</p>
+              <p
+                className={`text-2xl font-bold ${
+                  quote.percent_change >= 0 ? 'text-emerald-400' : 'text-red-400'
+                }`}
+              >
+                {quote.percent_change >= 0 ? '+' : ''}
+                {quote.percent_change.toFixed(2)}%
+              </p>
+            </div>
+            <div className="rounded-xl bg-muted/40 p-4 space-y-1">
+              <p className="text-xs text-muted-foreground">Volume</p>
+              <p className="text-2xl font-bold">{quote.volume.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
       )}
 
+      {/* Sentiment Card */}
       {sentiment && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Sentiment Analysis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500">Sentiment</p>
-                <p className={`text-2xl font-bold ${getSentimentColor(sentiment.sentiment)}`}>
-                  {sentiment.sentiment}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Justification</p>
-                <p className="text-gray-700">{sentiment.justification}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">
-                  Analyzed at: {new Date(sentiment.timestamp).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <SentimentIcon sentiment={sentiment.sentiment} />
+            <h2 className="text-base font-semibold">AI Sentiment Analysis</h2>
+          </div>
+
+          <div
+            className={`flex items-center gap-3 rounded-xl border p-4 ${sentimentBg(
+              sentiment.sentiment
+            )}`}
+          >
+            <SentimentIcon sentiment={sentiment.sentiment} />
+            <span className={`text-xl font-bold ${sentimentColor(sentiment.sentiment)}`}>
+              {sentiment.sentiment}
+            </span>
+          </div>
+
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {sentiment.justification}
+          </p>
+
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60">
+            <Clock size={12} />
+            <span>Analyzed at {new Date(sentiment.timestamp).toLocaleString()}</span>
+          </div>
+        </div>
       )}
     </div>
   )
