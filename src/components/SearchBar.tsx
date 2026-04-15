@@ -1,5 +1,5 @@
 'use client'
-
+import React from 'react';
 import { useState, KeyboardEvent } from 'react'
 import { toast } from 'sonner'
 import { analyzeSymbol } from '@/lib/api'

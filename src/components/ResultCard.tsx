@@ -1,5 +1,5 @@
 'use client'
-
+import React from 'react';
 import { useState, useEffect } from 'react'
 import { getQuote, getSentiment, QuoteResponse, SentimentResponse } from '@/lib/api'
 import { TrendingUp, TrendingDown, Minus, Activity, BarChart2, Clock } from 'lucide-react'
@@ -111,9 +111,8 @@ export default function ResultCard({ symbol }: ResultCardProps) {
             <div className="rounded-xl bg-muted/40 p-4 space-y-1">
               <p className="text-xs text-muted-foreground">Change</p>
               <p
-                className={`text-2xl font-bold ${
-                  quote.percent_change >= 0 ? 'text-emerald-400' : 'text-red-400'
-                }`}
+                className={`text-2xl font-bold ${quote.percent_change >= 0 ? 'text-emerald-400' : 'text-red-400'
+                  }`}
               >
                 {quote.percent_change >= 0 ? '+' : ''}
                 {quote.percent_change.toFixed(2)}%

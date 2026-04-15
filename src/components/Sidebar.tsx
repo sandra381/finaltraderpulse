@@ -1,5 +1,5 @@
 'use client'
-
+import React from 'react';
 import { useGamification } from '@/contexts/GamificationContext'
 import { BarChart2, LayoutDashboard, Trophy, Zap } from 'lucide-react'
 
